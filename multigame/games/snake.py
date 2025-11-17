@@ -1,4 +1,5 @@
 import tkinter as tk
+import os
 
 
 class SnakeApp:
@@ -11,8 +12,52 @@ class SnakeApp:
         self.cell = cell
         self.cols = width // cell
         self.rows = height // cell
+        
+        # 尝试加载图片资源
+        self.images = {}
+        self._load_images()
+        
         self._build()
         self.reset()
+    
+    def _load_images(self):
+        """加载蛇头图片"""
+        base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        image_path = os.path.join(base_path, 'images')
+        
+        # 只加载蛇头图片
+        snake_img_path = os.path.join(image_path, '贪吃蛇.png')
+        
+        if os.path.exists(snake_img_path):
+            try:
+                # 加载原始图片
+                original_img = tk.PhotoImage(file=snake_img_path)
+                
+                # 获取原始图片尺寸
+                width = original_img.width()
+                height = original_img.height()
+                
+                # 计算缩放比例以适应格子大小
+                scale_x = max(1, width // self.cell)
+                scale_y = max(1, height // self.cell)
+                scale = max(scale_x, scale_y)
+                
+                # 缩放图片
+                if scale > 1:
+                    scaled_img = original_img.subsample(scale, scale)
+                else:
+                    scaled_img = original_img
+                
+                # 只用于蛇头
+                self.images['snake_head'] = scaled_img
+                
+                print(f"✓ 成功加载蛇头图片: 贪吃蛇.png (缩放比例: 1/{scale})")
+            except Exception as e:
+                print(f"✗ 加载图片失败: {e}")
+                self.images['snake_head'] = None
+        else:
+            print(f"✗ 未找到图片文件: 贪吃蛇.png")
+            self.images['snake_head'] = None
 
     def _build(self):
         f = tk.Frame(self.root, bg="#1e1e2e")
@@ -108,10 +153,22 @@ class SnakeApp:
         # Draw snake
         for i, (x, y) in enumerate(self.snake):
             x0, y0 = x * self.cell, y * self.cell
-            color = "#a6e3a1" if i == 0 else "#89b4fa"
-            self.canvas.create_rectangle(x0, y0, x0 + self.cell, y0 + self.cell, fill=color, outline="#1e1e2e", width=2)
             
-        # Draw food
+            # 蛇头使用图片
+            if i == 0 and self.images.get('snake_head'):
+                self.canvas.create_image(x0 + self.cell//2, y0 + self.cell//2, 
+                                        image=self.images['snake_head'])
+            # 蛇头没有图片时用绿色方块
+            elif i == 0:
+                self.canvas.create_rectangle(x0, y0, x0 + self.cell, y0 + self.cell, 
+                                            fill="#4ade80", outline="#1e1e2e", width=2)
+            # 蛇身全部用纯绿色方块
+            else:
+                self.canvas.create_rectangle(x0, y0, x0 + self.cell, y0 + self.cell, 
+                                            fill="#22c55e", outline="#1e1e2e", width=2)
+            
+        # Draw food - 使用苹果表情符号
         fx, fy = self.food
         x0, y0 = fx * self.cell, fy * self.cell
-        self.canvas.create_oval(x0+2, y0+2, x0 + self.cell-2, y0 + self.cell-2, fill='#f38ba8', outline="#f38ba8")
+        self.canvas.create_text(x0 + self.cell//2, y0 + self.cell//2, 
+                               text="🍎", font=("Arial", self.cell-2))
