@@ -1,0 +1,154 @@
+import tkinter as tk
+import random
+
+
+class MemoryApp:
+    IMAGE_FILES = [None] * 8 
+    CARD_BACK_IMAGE = None
+
+    COLORS = ['#f38ba8', '#fab387', '#f9e2af', '#a6e3a1', '#89dceb', '#89b4fa', '#cba6f7', '#f5c2e7']
+
+    def __init__(self, root, rows=4, cols=4):
+        self.root = root
+        self.root.title('记忆翻牌')
+        self.root.config(bg="#1e1e2e")
+        self.rows = rows
+        self.cols = cols
+        
+        self.use_images = all(self.IMAGE_FILES) and self.CARD_BACK_IMAGE
+        if self.use_images:
+            try:
+                self.card_images = [tk.PhotoImage(file=f) for f in self.IMAGE_FILES]
+                self.card_back = tk.PhotoImage(file=self.CARD_BACK_IMAGE)
+            except tk.TclError:
+                self.use_images = False
+
+        self._build()
+        self.reset()
+
+    def _build(self):
+        f = tk.Frame(self.root, bg="#1e1e2e")
+        f.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
+        
+        tk.Label(f, text='🎴 记忆翻牌', font=("Helvetica", 22, "bold"), fg="#cdd6f4", bg="#1e1e2e").pack(pady=(0, 10))
+        
+        self.board_frame = tk.Frame(f, bg="#1e1e2e")
+        self.board_frame.pack(pady=10)
+        
+        self.buttons = []
+        for r in range(self.rows):
+            row = []
+            for c in range(self.cols):
+                b = tk.Button(self.board_frame, text='', width=8, height=4, font=("Helvetica", 20, "bold"),
+                              bg="#313244", activebackground="#45475a", relief=tk.FLAT, bd=2,
+                              highlightbackground="#585b70", cursor="hand2",
+                              command=lambda r=r, c=c: self.on_click(r, c))
+                b.grid(row=r, column=c, padx=5, pady=5)
+                row.append(b)
+            self.buttons.append(row)
+            
+        ctrl = tk.Frame(f, bg="#1e1e2e")
+        ctrl.pack(pady=10)
+        
+        self.status = tk.Label(ctrl, text='', font=("Helvetica", 14), fg="#a6adc8", bg="#1e1e2e")
+        self.status.pack(side=tk.LEFT, padx=10)
+        
+        tk.Button(ctrl, text='🔄 重置', font=("Helvetica", 13), command=self.reset,
+                  fg="#1e1e2e", bg="#fab387", activebackground="#fab387", 
+                  relief=tk.FLAT, bd=0, padx=15, pady=8, cursor="hand2").pack()
+
+    def reset(self):
+        n = self.rows * self.cols
+        if n // 2 > len(self.COLORS) or (self.use_images and n // 2 > len(self.card_images)):
+            raise ValueError("Not enough colors or images for the grid size")
+            
+        pairs = list(range(n // 2)) * 2
+        random.shuffle(pairs)
+        self.values = [pairs[i * self.cols:(i + 1) * self.cols] for i in range(self.rows)]
+        self.revealed = [[False] * self.cols for _ in range(self.rows)]
+        self.first = None
+        self.locked = False
+        self.matches = 0
+        self.status['text'] = '翻开两张卡片进行配对'
+        self._update_buttons()
+
+    def _update_buttons(self):
+        for r in range(self.rows):
+            for c in range(self.cols):
+                btn = self.buttons[r][c]
+                if self.revealed[r][c]:
+                    val = self.values[r][c]
+                    if self.use_images:
+                        btn.config(image=self.card_images[val], text="", state=tk.DISABLED)
+                    else:
+                        btn.config(bg=self.COLORS[val], text="✓", fg="#1e1e2e", state=tk.DISABLED)
+                else:
+                    if self.use_images:
+                        btn.config(image=self.card_back, text="", state=tk.NORMAL)
+                    else:
+                        btn.config(bg="#313244", text="", state=tk.NORMAL)
+
+    def on_click(self, r, c):
+        if self.locked or self.revealed[r][c]:
+            return
+            
+        self.revealed[r][c] = True
+        self._update_buttons()
+        
+        if self.first is None:
+            self.first = (r, c)
+            return
+            
+        r0, c0 = self.first
+        if self.values[r0][c0] == self.values[r][c]:
+            self.matches += 1
+            if self.matches == (self.rows * self.cols) // 2:
+                self.status.config(text='🎉 恩喜，全部配对成功！', fg="#a6e3a1")
+            self.first = None
+        else:
+            self.locked = True
+            self.root.after(800, self._hide_pair, r0, c0, r, c)
+
+    def _update_buttons(self):
+        for r in range(self.rows):
+            for c in range(self.cols):
+                btn = self.buttons[r][c]
+                if self.revealed[r][c]:
+                    val = self.values[r][c]
+                    if self.use_images:
+                        btn.config(image=self.card_images[val], text="", state=tk.DISABLED)
+                    else:
+                        btn.config(bg=self.COLORS[val], text=str(val), state=tk.DISABLED)
+                else:
+                    if self.use_images:
+                        btn.config(image=self.card_back, text="", state=tk.NORMAL)
+                    else:
+                        btn.config(bg="#34495e", text="", state=tk.NORMAL)
+
+    def on_click(self, r, c):
+        if self.locked or self.revealed[r][c]:
+            return
+            
+        self.revealed[r][c] = True
+        self._update_buttons()
+        
+        if self.first is None:
+            self.first = (r, c)
+            return
+            
+        r0, c0 = self.first
+        if self.values[r0][c0] == self.values[r][c]:
+            self.matches += 1
+            if self.matches == (self.rows * self.cols) // 2:
+                self.status.config(text='恭喜，全部配对成功！', fg="#2ecc71")
+            self.first = None
+        else:
+            self.locked = True
+            self.root.after(800, self._hide_pair, r0, c0, r, c)
+
+    def _hide_pair(self, r0, c0, r1, c1):
+        self.revealed[r0][c0] = False
+        self.revealed[r1][c1] = False
+        self.first = None
+        self.locked = False
+        self._update_buttons()
