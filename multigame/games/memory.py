@@ -1,10 +1,15 @@
 import tkinter as tk
 import random
-from ui_utils import ModernButton, THEME
+import os
+from ui_utils import ModernButton, THEME, ResourceManager
 
 class MemoryApp:
-    IMAGE_FILES = [None] * 8 
-    CARD_BACK_IMAGE = None
+    # 使用新的水果图片
+    IMAGE_FILES = [
+        'fruit_apple.png', 'fruit_banana.png', 'fruit_cherry.png', 'fruit_grape.png',
+        'fruit_lemon.png', 'fruit_orange.png', 'fruit_pear.png', 'fruit_strawberry.png'
+    ]
+    CARD_BACK_IMAGE = 'card_back.png'
 
     COLORS = ['#f38ba8', '#fab387', '#f9e2af', '#a6e3a1', '#89dceb', '#89b4fa', '#cba6f7', '#f5c2e7']
 
@@ -15,16 +20,28 @@ class MemoryApp:
         self.rows = rows
         self.cols = cols
         
-        self.use_images = all(self.IMAGE_FILES) and self.CARD_BACK_IMAGE
-        if self.use_images:
-            try:
-                self.card_images = [tk.PhotoImage(file=f) for f in self.IMAGE_FILES]
-                self.card_back = tk.PhotoImage(file=self.CARD_BACK_IMAGE)
-            except tk.TclError:
-                self.use_images = False
-
+        self._load_images()
         self._build()
         self.reset()
+
+    def _load_images(self):
+        self.card_images = []
+        self.use_images = False
+        
+        # 尝试加载卡背
+        self.card_back = ResourceManager.get_image(self.CARD_BACK_IMAGE, (64, 64))
+        
+        if self.card_back:
+            # 尝试加载所有卡片图片
+            loaded_images = []
+            for img_file in self.IMAGE_FILES:
+                img = ResourceManager.get_image(img_file, (64, 64))
+                if img:
+                    loaded_images.append(img)
+            
+            if len(loaded_images) == len(self.IMAGE_FILES):
+                self.card_images = loaded_images
+                self.use_images = True
 
     def _build(self):
         f = tk.Frame(self.root, bg=THEME['bg'])
