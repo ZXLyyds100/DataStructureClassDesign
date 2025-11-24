@@ -6,7 +6,7 @@ import os
 from games import tictactoe, guess_number, hangman, blackjack, memory, minesweeper, snake
 from ui_utils import ModernButton, GameCard, THEME, center_window, ResourceManager
 
-APP_TITLE = "多游戏集合"
+APP_TITLE = "数据结构课设：小游戏集合[^_^]"
 
 
 class Launcher(tk.Tk):
