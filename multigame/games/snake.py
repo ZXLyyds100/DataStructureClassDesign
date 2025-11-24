@@ -1,12 +1,12 @@
 import tkinter as tk
 import os
-
+from ui_utils import ModernButton, THEME
 
 class SnakeApp:
     def __init__(self, root, width=500, height=500, cell=25):
         self.root = root
         self.root.title('贪吃蛇')
-        self.root.config(bg="#1e1e2e")
+        self.root.config(bg=THEME['bg'])
         self.width = width
         self.height = height
         self.cell = cell
@@ -60,24 +60,23 @@ class SnakeApp:
             self.images['snake_head'] = None
 
     def _build(self):
-        f = tk.Frame(self.root, bg="#1e1e2e")
+        f = tk.Frame(self.root, bg=THEME['bg'])
         f.pack(padx=10, pady=10)
 
-        tk.Label(f, text="🐍 贪吃蛇", font=("Helvetica", 24, "bold"), fg="#cdd6f4", bg="#1e1e2e").pack(pady=(0, 5))
+        tk.Label(f, text="🐍 贪吃蛇", font=("Helvetica", 24, "bold"), fg=THEME['fg'], bg=THEME['bg']).pack(pady=(0, 5))
 
-        header = tk.Frame(f, bg="#1e1e2e")
+        header = tk.Frame(f, bg=THEME['bg'])
         header.pack(pady=5, fill=tk.X)
         self.score_var = tk.StringVar()
-        tk.Label(header, textvariable=self.score_var, font=("Helvetica", 16, "bold"), fg="#a6e3a1", bg="#1e1e2e").pack()
+        tk.Label(header, textvariable=self.score_var, font=("Helvetica", 16, "bold"), fg=THEME['green'], bg=THEME['bg']).pack()
         
-        self.canvas = tk.Canvas(f, width=self.width, height=self.height, bg='#313244', highlightthickness=0)
+        self.canvas = tk.Canvas(f, width=self.width, height=self.height, bg=THEME['surface'], highlightthickness=0)
         self.canvas.pack(pady=10)
         
         self.status_var = tk.StringVar()
-        tk.Label(f, textvariable=self.status_var, font=("Helvetica", 14), fg="#a6adc8", bg="#1e1e2e").pack(pady=5)
+        tk.Label(f, textvariable=self.status_var, font=("Helvetica", 14), fg=THEME['subtext'], bg=THEME['bg']).pack(pady=5)
 
-        tk.Button(f, text='🔄 开始 / 重置', font=("Helvetica", 13), command=self.reset,
-                  fg="#1e1e2e", bg="#89b4fa", activebackground="#89b4fa", relief=tk.FLAT, bd=0, padx=15, pady=8, cursor="hand2").pack(pady=10)
+        ModernButton(f, text='🔄 开始 / 重置', command=self.reset, bg_color=THEME['blue']).pack(pady=10)
 
         self.root.bind('<Up>', lambda e: self.change_dir((0, -1)))
         self.root.bind('<Down>', lambda e: self.change_dir((0, 1)))
@@ -142,7 +141,7 @@ class SnakeApp:
         self.running = False
         self.status_var.set(f'💀 游戏结束！最终得分: {self.score}')
         self.canvas.create_text(self.width/2, self.height/2, text="GAME OVER",
-                                font=("Helvetica", 36, "bold"), fill="#f38ba8")
+                                font=("Helvetica", 36, "bold"), fill=THEME['red'])
 
     def update_score(self):
         self.score_var.set(f'🏆 得分: {self.score}')
@@ -161,11 +160,11 @@ class SnakeApp:
             # 蛇头没有图片时用绿色方块
             elif i == 0:
                 self.canvas.create_rectangle(x0, y0, x0 + self.cell, y0 + self.cell, 
-                                            fill="#4ade80", outline="#1e1e2e", width=2)
+                                            fill=THEME['green'], outline=THEME['bg'], width=2)
             # 蛇身全部用纯绿色方块
             else:
                 self.canvas.create_rectangle(x0, y0, x0 + self.cell, y0 + self.cell, 
-                                            fill="#22c55e", outline="#1e1e2e", width=2)
+                                            fill=THEME['green'], outline=THEME['bg'], width=2)
             
         # Draw food - 使用苹果表情符号
         fx, fy = self.food

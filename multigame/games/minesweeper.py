@@ -1,11 +1,8 @@
 import tkinter as tk
 import random
-
+import os
 
 class MinesweeperApp:
-    FLAG_ICON = None 
-    MINE_ICON = None
-
     NUMBER_COLORS = {
         1: "#89b4fa", 2: "#a6e3a1", 3: "#f38ba8", 4: "#cba6f7",
         5: "#f9e2af", 6: "#89dceb", 7: "#fab387", 8: "#bac2de"
@@ -19,8 +16,29 @@ class MinesweeperApp:
         self.cols = cols
         self.mines = mines
         self.game_over_flag = False
+        
+        # 加载图片
+        self.images = {}
+        self._load_images()
+        
         self._build()
         self.reset()
+
+    def _load_images(self):
+        base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        image_path = os.path.join(base_path, 'images')
+        
+        try:
+            # 加载并缩放图片
+            mine_img = tk.PhotoImage(file=os.path.join(image_path, 'mine.png'))
+            flag_img = tk.PhotoImage(file=os.path.join(image_path, 'flag.png'))
+            
+            # 简单的缩放逻辑 (假设格子大小约 25x25)
+            self.images['mine'] = mine_img.subsample(max(1, mine_img.width() // 20))
+            self.images['flag'] = flag_img.subsample(max(1, flag_img.width() // 20))
+        except Exception:
+            self.images['mine'] = None
+            self.images['flag'] = None
 
     def _build(self):
         f = tk.Frame(self.root, bg="#1e1e2e")
@@ -77,7 +95,7 @@ class MinesweeperApp:
 
         for r in range(self.rows):
             for c in range(self.cols):
-                self.buttons[r][c].config(text='', state=tk.NORMAL, bg="#45475a", fg="#cdd6f4", relief=tk.RAISED)
+                self.buttons[r][c].config(text='', image='', state=tk.NORMAL, bg="#45475a", fg="#cdd6f4", relief=tk.RAISED)
         
         self.status.config(text='右键插旗，左键排雷', fg="#a6adc8")
 
@@ -85,17 +103,27 @@ class MinesweeperApp:
         if self.game_over_flag or self.revealed[r][c]:
             return
         self.flagged[r][c] = not self.flagged[r][c]
-        self.buttons[r][c].config(text='🚩' if self.flagged[r][c] else '', fg="#f38ba8")
+        
+        if self.flagged[r][c]:
+            if self.images['flag']:
+                self.buttons[r][c].config(image=self.images['flag'], width=20, height=20)
+            else:
+                self.buttons[r][c].config(text='🚩', fg="#f38ba8")
+        else:
+            self.buttons[r][c].config(image='', text='', width=2, height=1)
 
     def open_cell(self, r, c):
         if self.game_over_flag or self.flagged[r][c] or self.revealed[r][c]:
             return
             
         self.revealed[r][c] = True
-        self.buttons[r][c].config(relief=tk.SUNKEN, bg="#313244")
+        self.buttons[r][c].config(relief=tk.SUNKEN, bg="#313244", image='', width=2, height=1)
 
         if self.grid[r][c] == -1:
-            self.buttons[r][c].config(text='💣', bg='#f38ba8', fg="#1e1e2e")
+            if self.images['mine']:
+                self.buttons[r][c].config(image=self.images['mine'], bg='#f38ba8', width=20, height=20)
+            else:
+                self.buttons[r][c].config(text='💣', bg='#f38ba8', fg="#1e1e2e")
             self.game_over(False)
             return
             
@@ -124,59 +152,12 @@ class MinesweeperApp:
         for r in range(self.rows):
             for c in range(self.cols):
                 if self.grid[r][c] == -1:
-                    self.buttons[r][c].config(text='💣', bg='#585b70' if won else '#f38ba8')
+                    if self.images['mine']:
+                        self.buttons[r][c].config(image=self.images['mine'], bg='#585b70' if won else '#f38ba8', width=20, height=20)
+                    else:
+                        self.buttons[r][c].config(text='💣', bg='#585b70' if won else '#f38ba8')
         
         if won:
-            self.status.config(text='🎉 恩喜你，全部清除！', fg="#a6e3a1")
+            self.status.config(text='🎉 恭喜你，全部清除！', fg="#a6e3a1")
         else:
             self.status.config(text='💥 游戏结束，踩到地雷了', fg="#f38ba8")
-
-    def toggle_flag(self, r, c):
-        if self.game_over_flag or self.revealed[r][c]:
-            return
-        self.flagged[r][c] = not self.flagged[r][c]
-        self.buttons[r][c].config(text='🚩' if self.flagged[r][c] else '', fg="red")
-
-    def open_cell(self, r, c):
-        if self.game_over_flag or self.flagged[r][c] or self.revealed[r][c]:
-            return
-            
-        self.revealed[r][c] = True
-        self.buttons[r][c].config(relief=tk.SUNKEN, bg="#bdc3c7")
-
-        if self.grid[r][c] == -1:
-            self.buttons[r][c].config(text='💣', bg='red')
-            self.game_over(False)
-            return
-            
-        val = self.grid[r][c]
-        if val > 0:
-            self.buttons[r][c].config(text=str(val), fg=self.NUMBER_COLORS.get(val, "black"))
-        else: # val is 0, open neighbors
-            for dr in (-1, 0, 1):
-                for dc in (-1, 0, 1):
-                    rr, cc = r + dr, c + dc
-                    if 0 <= rr < self.rows and 0 <= cc < self.cols:
-                        self.open_cell(rr, cc)
-        
-        if self._check_win():
-            self.game_over(True)
-
-    def _check_win(self):
-        for r in range(self.rows):
-            for c in range(self.cols):
-                if self.grid[r][c] != -1 and not self.revealed[r][c]:
-                    return False
-        return True
-
-    def game_over(self, won):
-        self.game_over_flag = True
-        for r in range(self.rows):
-            for c in range(self.cols):
-                if self.grid[r][c] == -1:
-                    self.buttons[r][c].config(text='💣', bg='red' if not won else 'gray')
-        
-        if won:
-            self.status.config(text='恭喜你，全部清除！', fg="#27ae60")
-        else:
-            self.status.config(text='游戏结束，踩到地雷了。', fg="#c0392b")

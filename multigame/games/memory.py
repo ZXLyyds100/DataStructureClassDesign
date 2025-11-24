@@ -1,6 +1,6 @@
 import tkinter as tk
 import random
-
+from ui_utils import ModernButton, THEME
 
 class MemoryApp:
     IMAGE_FILES = [None] * 8 
@@ -11,7 +11,7 @@ class MemoryApp:
     def __init__(self, root, rows=4, cols=4):
         self.root = root
         self.root.title('记忆翻牌')
-        self.root.config(bg="#1e1e2e")
+        self.root.config(bg=THEME['bg'])
         self.rows = rows
         self.cols = cols
         
@@ -27,12 +27,12 @@ class MemoryApp:
         self.reset()
 
     def _build(self):
-        f = tk.Frame(self.root, bg="#1e1e2e")
+        f = tk.Frame(self.root, bg=THEME['bg'])
         f.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
         
-        tk.Label(f, text='🎴 记忆翻牌', font=("Helvetica", 22, "bold"), fg="#cdd6f4", bg="#1e1e2e").pack(pady=(0, 10))
+        tk.Label(f, text='🎴 记忆翻牌', font=("Helvetica", 22, "bold"), fg=THEME['fg'], bg=THEME['bg']).pack(pady=(0, 10))
         
-        self.board_frame = tk.Frame(f, bg="#1e1e2e")
+        self.board_frame = tk.Frame(f, bg=THEME['bg'])
         self.board_frame.pack(pady=10)
         
         self.buttons = []
@@ -40,22 +40,20 @@ class MemoryApp:
             row = []
             for c in range(self.cols):
                 b = tk.Button(self.board_frame, text='', width=8, height=4, font=("Helvetica", 20, "bold"),
-                              bg="#313244", activebackground="#45475a", relief=tk.FLAT, bd=2,
-                              highlightbackground="#585b70", cursor="hand2",
+                              bg=THEME['surface'], activebackground=THEME['surface2'], relief=tk.FLAT, bd=2,
+                              highlightbackground=THEME['overlay'], cursor="hand2",
                               command=lambda r=r, c=c: self.on_click(r, c))
                 b.grid(row=r, column=c, padx=5, pady=5)
                 row.append(b)
             self.buttons.append(row)
             
-        ctrl = tk.Frame(f, bg="#1e1e2e")
+        ctrl = tk.Frame(f, bg=THEME['bg'])
         ctrl.pack(pady=10)
         
-        self.status = tk.Label(ctrl, text='', font=("Helvetica", 14), fg="#a6adc8", bg="#1e1e2e")
+        self.status = tk.Label(ctrl, text='', font=("Helvetica", 14), fg=THEME['subtext'], bg=THEME['bg'])
         self.status.pack(side=tk.LEFT, padx=10)
         
-        tk.Button(ctrl, text='🔄 重置', font=("Helvetica", 13), command=self.reset,
-                  fg="#1e1e2e", bg="#fab387", activebackground="#fab387", 
-                  relief=tk.FLAT, bd=0, padx=15, pady=8, cursor="hand2").pack()
+        ModernButton(ctrl, text='🔄 重置', command=self.reset, bg_color=THEME['orange']).pack()
 
     def reset(self):
         n = self.rows * self.cols
@@ -81,12 +79,12 @@ class MemoryApp:
                     if self.use_images:
                         btn.config(image=self.card_images[val], text="", state=tk.DISABLED)
                     else:
-                        btn.config(bg=self.COLORS[val], text="✓", fg="#1e1e2e", state=tk.DISABLED)
+                        btn.config(bg=self.COLORS[val], text=str(val), state=tk.DISABLED, disabledforeground=THEME['bg'])
                 else:
                     if self.use_images:
                         btn.config(image=self.card_back, text="", state=tk.NORMAL)
                     else:
-                        btn.config(bg="#313244", text="", state=tk.NORMAL)
+                        btn.config(bg=THEME['surface'], text="", state=tk.NORMAL)
 
     def on_click(self, r, c):
         if self.locked or self.revealed[r][c]:
@@ -103,44 +101,7 @@ class MemoryApp:
         if self.values[r0][c0] == self.values[r][c]:
             self.matches += 1
             if self.matches == (self.rows * self.cols) // 2:
-                self.status.config(text='🎉 恩喜，全部配对成功！', fg="#a6e3a1")
-            self.first = None
-        else:
-            self.locked = True
-            self.root.after(800, self._hide_pair, r0, c0, r, c)
-
-    def _update_buttons(self):
-        for r in range(self.rows):
-            for c in range(self.cols):
-                btn = self.buttons[r][c]
-                if self.revealed[r][c]:
-                    val = self.values[r][c]
-                    if self.use_images:
-                        btn.config(image=self.card_images[val], text="", state=tk.DISABLED)
-                    else:
-                        btn.config(bg=self.COLORS[val], text=str(val), state=tk.DISABLED)
-                else:
-                    if self.use_images:
-                        btn.config(image=self.card_back, text="", state=tk.NORMAL)
-                    else:
-                        btn.config(bg="#34495e", text="", state=tk.NORMAL)
-
-    def on_click(self, r, c):
-        if self.locked or self.revealed[r][c]:
-            return
-            
-        self.revealed[r][c] = True
-        self._update_buttons()
-        
-        if self.first is None:
-            self.first = (r, c)
-            return
-            
-        r0, c0 = self.first
-        if self.values[r0][c0] == self.values[r][c]:
-            self.matches += 1
-            if self.matches == (self.rows * self.cols) // 2:
-                self.status.config(text='恭喜，全部配对成功！', fg="#2ecc71")
+                self.status.config(text='🎉 恩喜，全部配对成功！', fg=THEME['green'])
             self.first = None
         else:
             self.locked = True

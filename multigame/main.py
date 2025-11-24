@@ -4,6 +4,7 @@ import sys
 import os
 
 from games import tictactoe, guess_number, hangman, blackjack, memory, minesweeper, snake
+from ui_utils import ModernButton, GameCard, THEME, center_window, ResourceManager
 
 APP_TITLE = "多游戏集合"
 
@@ -12,74 +13,64 @@ class Launcher(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title(APP_TITLE)
-        self.geometry("700x600")
-        self.config(bg="#1e1e2e")
+        self.geometry("900x700")
+        self.config(bg=THEME["bg"])
+        center_window(self, 900, 700)
         self._build_ui()
 
     def _build_ui(self):
         # Main container
-        main_frame = tk.Frame(self, bg="#1e1e2e")
-        main_frame.pack(fill=tk.BOTH, expand=True, padx=30, pady=30)
+        main_frame = tk.Frame(self, bg=THEME["bg"])
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=40, pady=40)
 
-        # Title
-        title = tk.Label(main_frame, text=APP_TITLE, font=("Helvetica", 36, "bold"), 
-                        fg="#cdd6f4", bg="#1e1e2e")
-        title.pack(pady=(10, 5))
-
-        # Subtitle
-        desc = tk.Label(main_frame, text="选择下面的游戏开始", font=("Helvetica", 14), 
-                       fg="#a6adc8", bg="#1e1e2e")
-        desc.pack(pady=(0, 30))
-
-        # Buttons container
-        btn_frame = tk.Frame(main_frame, bg="#1e1e2e")
-        btn_frame.pack(fill=tk.BOTH, expand=True)
+        # Header Section
+        header_frame = tk.Frame(main_frame, bg=THEME["bg"])
+        header_frame.pack(fill=tk.X, pady=(0, 30))
         
-        # Configure grid weights for centering
-        for i in range(4):
-            btn_frame.grid_rowconfigure(i, weight=1)
-        btn_frame.grid_columnconfigure(0, weight=1)
-        btn_frame.grid_columnconfigure(1, weight=1)
+        # Try to load icon
+        icon_img = ResourceManager.get_image("game_controller.png", (80, 80))
+        if icon_img:
+            icon_lbl = tk.Label(header_frame, image=icon_img, bg=THEME["bg"])
+            icon_lbl.image = icon_img # Keep reference
+            icon_lbl.pack(side=tk.LEFT, padx=(0, 20))
 
-        buttons = [
-            ("🎮 井字棋", self.launch_tictactoe, "#f38ba8"),
-            ("🔢 猜数字", self.launch_guess, "#fab387"),
-            ("📝 猜单词", self.launch_hangman, "#f9e2af"),
-            ("🃏 二十一点", self.launch_blackjack, "#a6e3a1"),
-            ("🎴 记忆翻牌", self.launch_memory, "#89dceb"),
-            ("💣 扫雷", self.launch_minesweeper, "#89b4fa"),
-            ("🐍 贪吃蛇", self.launch_snake, "#cba6f7"),
+        title_frame = tk.Frame(header_frame, bg=THEME["bg"])
+        title_frame.pack(side=tk.LEFT, fill=tk.Y, expand=True)
+
+        title = tk.Label(title_frame, text=APP_TITLE, font=("Helvetica", 36, "bold"), 
+                        fg=THEME["fg"], bg=THEME["bg"], anchor="w")
+        title.pack(fill=tk.X)
+
+        desc = tk.Label(title_frame, text="选择下面的游戏开始您的挑战", font=("Helvetica", 16), 
+                       fg=THEME["subtext"], bg=THEME["bg"], anchor="w")
+        desc.pack(fill=tk.X, pady=(5, 0))
+
+        # Games Grid container
+        grid_frame = tk.Frame(main_frame, bg=THEME["bg"])
+        grid_frame.pack(fill=tk.BOTH, expand=True)
+        
+        # Configure grid weights
+        for i in range(3):
+            grid_frame.grid_columnconfigure(i, weight=1)
+
+        games = [
+            ("井字棋", self.launch_tictactoe, "tictactoe.png"),
+            ("猜数字", self.launch_guess, "guess_number.png"),
+            ("猜单词", self.launch_hangman, "hangman.png"),
+            ("二十一点", self.launch_blackjack, "blackjack.png"),
+            ("记忆翻牌", self.launch_memory, "memory.png"),
+            ("扫雷", self.launch_minesweeper, "mine.png"),
+            ("贪吃蛇", self.launch_snake, "snake_head.png"),
         ]
 
-        for i, (label, cmd, color) in enumerate(buttons):
-            b = tk.Button(btn_frame, text=label, font=("Helvetica", 13, "bold"), 
-                          fg="#1e1e2e", bg=color, activebackground=color, 
-                          activeforeground="#11111b", relief=tk.FLAT, bd=0,
-                          width=18, height=2, cursor="hand2", command=cmd)
-            b.grid(row=i // 2, column=i % 2, padx=12, pady=10, sticky="ew")
-            
-            # Hover effects
-            def on_enter(e, btn=b, clr=color):
-                btn.config(bg=self._lighten_color(clr))
-            def on_leave(e, btn=b, clr=color):
-                btn.config(bg=clr)
-            
-            b.bind("<Enter>", on_enter)
-            b.bind("<Leave>", on_leave)
+        for i, (label, cmd, icon) in enumerate(games):
+            card = GameCard(grid_frame, title=label, icon_name=icon, command=cmd)
+            card.grid(row=i // 3, column=i % 3, padx=15, pady=15, sticky="nsew")
 
         # Footer info
-        info = tk.Label(main_frame, text="提示：点击游戏按钮即可开始 | 关闭子窗口不会退出主程序", 
-                       font=("Helvetica", 10), fg="#6c7086", bg="#1e1e2e")
-        info.pack(pady=(20, 10))
-
-    def _lighten_color(self, hex_color):
-        """让颜色变亮一点用于悬停效果"""
-        hex_color = hex_color.lstrip('#')
-        r, g, b = int(hex_color[0:2], 16), int(hex_color[2:4], 16), int(hex_color[4:6], 16)
-        r = min(255, int(r * 1.15))
-        g = min(255, int(g * 1.15))
-        b = min(255, int(b * 1.15))
-        return f"#{r:02x}{g:02x}{b:02x}"
+        info = tk.Label(main_frame, text="提示：点击卡片即可开始 | 关闭子窗口不会退出主程序", 
+                       font=("Helvetica", 12), fg=THEME["subtext"], bg=THEME["bg"])
+        info.pack(side=tk.BOTTOM, pady=(20, 0))
 
     def launch_tictactoe(self):
         tictactoe.TicTacToeApp(tk.Toplevel(self))
